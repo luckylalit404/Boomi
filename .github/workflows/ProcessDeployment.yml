@@ -1,0 +1,507 @@
+name: Boomi Processes Deployment Pipeline
+
+on:
+   push:
+    paths:
+      - 'boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/*.json' 
+env: 
+           BOOMI_ACCOUNTID: ${{secrets.BOOMI_ACCOUNTID}}
+           ASHMITA_SAWANT_API_AUTH: ${{secrets.ASHMITA_SAWANT_API_AUTH}}
+           ASHMITA_SAWANT_USERNAME: ${{secrets.ASHMITA_SAWANT_USERNAME}} 
+           ASHMITA_SAWANT_EMAIL: ${{secrets.ASHMITA_SAWANT_EMAIL}}
+           KARTIK_DASHORA_API_AUTH: ${{secrets.KARTIK_DASHORA_API_AUTH}}
+           KARTIK_DASHORA_USERNAME: ${{secrets.KARTIK_DASHORA_USERNAME}}
+           KARTIK_DASHORA_EMAIL: ${{secrets.KARTIK_DASHORA_EMAIL}}
+           LALIT_KARPENTER_API_AUTH: ${{secrets.LALIT_KARPENTER_API_AUTH}}
+           LALIT_KARPENTER_USERNAME: ${{secrets.LALIT_KARPENTER_USERNAME}}
+           LALIT_KARPENTER_EMAIL: ${{secrets.LALIT_KARPENTER_EMAIL}}
+           LALIT_KUMAWAT_API_AUTH: ${{secrets.LALIT_KUMAWAT_API_AUTH}}
+           LALIT_KUMAWAT_USERNAME: ${{secrets.LALIT_KUMAWAT_USERNAME}}
+           LALIT_KUMAWAT_EMAIL: ${{secrets.LALIT_KUMAWAT_EMAIL}}
+           SANSKRITI_SHARMA_API_AUTH: ${{secrets.SANSKRITI_SHARMA_API_AUTH}}
+           SANSKRITI_SHARMA_USERNAME: ${{secrets.SANSKRITI_SHARMA_USERNAME}}
+           SANSKRITI_SHARMA_EMAIL: ${{secrets.SANSKRITI_SHARMA_EMAIL}}
+           
+           
+jobs:
+  getProcessInfo: 
+    outputs:
+      componentIds: ${{ steps.setProcessLevelInfo.outputs.componentIds }}
+      packageVersions: ${{ steps.setProcessLevelInfo.outputs.packageVersions }}
+      processNames: ${{steps.setProcessLevelInfo.outputs.processNames}}
+      environmentName: ${{steps.setProcessLevelInfo.outputs.environmentName}}
+      fileHoldersName: ${{steps.setProcessLevelInfo.outputs.fileHoldersName}}
+      fileToRead: ${{steps.setProcessLevelInfo.outputs.fileToRead}}
+      fileRead: ${{steps.setProcessLevelInfo.outputs.fileRead}}
+      envKey: ${{steps.setProcessLevelInfo.outputs.envKey}}
+      modes: ${{steps.setProcessLevelInfo.outputs.modes}}
+      deploymentIds: ${{steps.setProcessLevelInfo.outputs.deploymentIds}}
+      uniqueKey: ${{steps.setProcessLevelInfo.outputs.uniqueKey}} 
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Getting/Setting Process Info 
+        uses: actions/checkout@v2
+      - id: setProcessLevelInfo
+        run: |
+              fileToBeRead=$(ls -1 ./boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/*.json )
+              echo "File To be Read is:" $fileToBeRead
+              arrIN=(${fileToBeRead//// })
+              fileToRead=$(echo ${arrIN[4]})
+              echo $fileToRead
+              echo "::set-output name=fileToRead::$fileToRead"
+              fileRead=$(cat ./boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead")
+              echo "File Data:"$fileRead
+               
+              
+              arrIN=(${fileToRead//./ })
+              uniqueKey=$(echo ${arrIN[1]})
+              echo $uniqueKey
+              echo "::set-output name=uniqueKey::$uniqueKey"
+                 
+              environmentName=$(echo ${fileRead} | jq '.[] | .environmentName')
+              echo $environmentName
+              echo "::set-output name=environmentName::$environmentName"
+              
+              if [[ $environmentName == '"Production"' ]]
+              then
+                   envKey="prod"
+              elif [[ $environmentName == '"Test"' ]]
+              then 
+                   envKey="test"
+              else
+                   envKey=null
+              fi
+              echo $envKey
+              echo "envKey is:" $envKey
+              echo "::set-output name=envKey::$envKey"
+              processName=$(echo ${fileRead} | jq '.[] | .processDetails[].processName')
+              componentID=$(echo  ${fileRead} | jq '.[] | .processDetails[].componentID')
+              packageVersion=$(echo  ${fileRead} | jq '.[] | .processDetails[].packageVersion')
+              mode=$(echo  ${fileRead} | jq '.[] | .processDetails[].mode')
+              deploymentID=$(echo  ${fileRead} | jq '.[] | .processDetails[].deploymentID')
+              
+              ComponentsArray=$(echo $componentID)
+              echo $ComponentsArray
+              echo "::set-output name=componentIds::($ComponentsArray)"
+              
+              ProcessNamesArray=$(echo $processName)
+              echo $ProcessNamesArray
+              echo "::set-output name=processNames::($ProcessNamesArray)"
+              
+              PackageVersionArray=$(echo $packageVersion)
+              echo $PackageVersionArray
+              echo "::set-output name=packageVersions::($PackageVersionArray)"
+              
+              ModeArray=$(echo $mode)
+              echo $ModeArray
+              echo "::set-output name=modes::($ModeArray)"
+              
+              DeploymentsArray=$(echo $deploymentID)
+              echo $DeploymentsArray
+              echo "::set-output name=deploymentIds::($DeploymentsArray)"
+                 
+  getEnvironmentInfo:
+     needs: getProcessInfo
+     runs-on: ubuntu-latest
+     outputs:
+       prodEnvironmentId: ${{steps.setEnvironmentLevelInfo.outputs.prodEnvironmentId}}
+       prodAtomId: ${{steps.setEnvironmentLevelInfo.outputs.prodAtomId}}
+       testEnvironmentId: ${{steps.setEnvironmentLevelInfo.outputs.testEnvironmentId}}
+       testAtomId: ${{steps.setEnvironmentLevelInfo.outputs.testAtomId}}
+     steps:
+        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+        - name: Get Environment Info
+          uses: actions/checkout@v2   #Check in repo.
+        - id: setEnvironmentLevelInfo
+          run: |
+              ProdEnvironmentDetails=$(cat ./boomi/DeploymentConfiguration/EnvironmentConfiguration/Prod.Env.Config.json)
+              prodEnvironmentID=$(echo  ${ProdEnvironmentDetails} | jq '.[] | .environmentId')
+              echo $prodEnvironmentID
+              echo "::set-output name=prodEnvironmentId::$prodEnvironmentID"
+              prodAtomID=$(echo ${ProdEnvironmentDetails} | jq '.[] | .atomId')
+              echo $prodAtomID
+              echo "::set-output name=prodAtomId::$prodAtomID"
+              TestEnvironmentDetails=$(cat ./boomi/DeploymentConfiguration/EnvironmentConfiguration/Test.Env.Config.json)
+              testEnvironmentID=$(echo  ${TestEnvironmentDetails} | jq '.[] | .environmentId')
+              echo $testEnvironmentID
+              echo "::set-output name=testEnvironmentId::$testEnvironmentID"
+              testAtomID=$(echo ${TestEnvironmentDetails} | jq '.[] | .atomId')
+              echo $testAtomID
+              echo "::set-output name=testAtomId::$testAtomID"
+              
+  createPackage:
+   
+   runs-on: ubuntu-latest   
+   outputs:
+    packageId: ${{ steps.packageCreation.outputs.packageIds }}
+   needs: [getProcessInfo,getEnvironmentInfo]
+   steps:
+      - uses: actions/checkout@v2
+      - name: Package Creation
+        
+        id: packageCreation
+        run: |
+              fileToRead=${{needs.getProcessInfo.outputs.fileToRead}}
+              echo "File To Read is:" $fileToRead
+              fileHoldersName=$(git log -n 1 --pretty='format:%an' -- boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead")
+              echo "File Committer's Name is:" $fileHoldersName
+              components=${{needs.getProcessInfo.outputs.componentIds}}
+              packageVersions=${{needs.getProcessInfo.outputs.packageVersions}}
+              modes=${{needs.getProcessInfo.outputs.modes}} 
+              
+              
+              if [[ $fileHoldersName == "ashmita0708" ]]
+              then
+                   apiAuth=$ASHMITA_SAWANT_API_AUTH
+              elif [[ $fileHoldersName == "Lalitkarpenter10" ]]
+              then
+                   apiAuth=$LALIT_KARPENTER_API_AUTH
+              elif [[ $fileHoldersName == "kartik-dashora-boomi" ]]
+              then
+                   apiAuth=$KARTIK_DASHORA_API_AUTH
+              elif [[ $fileHoldersName == "Lalit Kumawat" ]]
+              then
+                   apiAuth=$LALIT_KUMAWAT_API_AUTH
+              elif [[ $fileHoldersName == "Sanskriti Sharma" ]]
+              then
+                  apiAuth=$SANSKRITI_SHARMA_API_AUTH
+              else
+                   apiAuth=null
+              fi
+              BoomiAccountId=$BOOMI_ACCOUNTID
+              echo $BoomiAccountId
+              echo $apiAuth
+              for ((i=0;i<${#components[@]};i++))
+              do
+                  if [ ${modes[$i]} != "re-deploy" ] && [ ${modes[$i]} != "undeploy" ] && [ ${modes[$i]} != "none" ]
+                  then
+                      CODE=`curl  --request POST \
+                                   --header "authorization: ${apiAuth}" \
+                                   --header 'content-type: application/json' \
+                                   --header 'accept: application/json' \
+                                   --url "https://api.boomi.com/api/rest/v1/${BoomiAccountId}/PackagedComponent" \
+                                   --data '{"componentId": "'${components[$i]}'","packageVersion":"'${packageVersions[$i]}'", "notes":"Package for deployment" }'`
+                                   echo $CODE
+                                   packageIds=$(echo ${CODE} | jq '.packageId')
+                                   packageIdsArray+="$packageIds "
+                  fi
+              done              
+              echo "::set-output name=packageIds::$packageIdsArray"
+  deployPackage: 
+   
+   runs-on: ubuntu-latest    
+   needs: [createPackage,getProcessInfo,getEnvironmentInfo]
+   steps:   
+     - uses: actions/checkout@v2
+     - name: Package Deploy
+       id: packageDeploy
+       run: |
+             fileToBeRead=$(ls -1 ./boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/*.json )
+             echo "File To be Read is:" $fileToBeRead
+              arrIN=(${fileToBeRead//// })
+              fileToRead=$(echo ${arrIN[4]})
+              echo $fileToRead
+              echo "::set-output name=fileToRead::$fileToRead"
+              fileRead=$(cat ./boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead")
+              echo "File Data:"$fileRead
+              fileHoldersName=$(git log -n 1 --pretty='format:%an' -- boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead")
+              echo "File Committer's Name is:" $fileHoldersName
+              echo "::set-output name=fileHoldersName::'$fileHoldersName'"
+                 
+              envName=${{needs.getProcessInfo.outputs.environmentName}}
+             processNames=${{needs.getProcessInfo.outputs.processNames}}
+             envKey=${{needs.getProcessInfo.outputs.envKey}}
+             echo $envKey
+             echo $envName
+             
+             modes=${{needs.getProcessInfo.outputs.modes}}
+             
+             uniqueKey=${{needs.getProcessInfo.outputs.uniqueKey}}
+             echo $uniqueKey
+              if [[ $fileHoldersName == "ashmita0708" ]]
+              then
+                apiAuth=$ASHMITA_SAWANT_API_AUTH
+                username=$ASHMITA_SAWANT_USERNAME
+                email=$ASHMITA_SAWANT_EMAIL
+              elif [[ $fileHoldersName == "Lalitkarpenter10" ]]
+              then
+                   apiAuth=$LALIT_KARPENTER_API_AUTH
+                   username=$LALIT_KARPENTER_USERNAME
+                   email=$LALIT_KARPENTER_EMAIL
+              elif [[ $fileHoldersName == "kartik-dashora-boomi" ]]
+              then
+                   apiAuth=$KARTIK_DASHORA_API_AUTH
+                   username=$KARTIK_DASHORA_USERNAME
+                   email=$KARTIK_DASHORA_EMAIL
+              elif [[ $fileHoldersName == "Lalit Kumawat" ]]
+              then
+                   apiAuth=$LALIT_KUMAWAT_API_AUTH
+                   username=$LALIT_KUMAWAT_USERNAME
+                   email=$LALIT_KUMAWAT_EMAIL
+              elif [[ $fileHoldersName == "Sanskriti Sharma" ]]
+              then
+                   apiAuth=$SANSKRITI_SHARMA_API_AUTH
+                   username=$SANSKRITI_SHARMA_USERNAME
+                   email=$SANSKRITI_SHARMA_EMAIL
+              else 
+                   apiAuth=null
+                   username=null
+                   email=null
+              fi
+              BoomiAccountId=$BOOMI_ACCOUNTID
+              echo $BoomiAccountId
+              echo $apiAuth
+              echo $username
+              echo $email
+              
+              echo $fileRead > boomi/Archives/ProcessArchive/ARC_"$fileToRead"   
+                 git config user.name $username
+                 git config user.email $email
+                 git add boomi/Archives/ProcessArchive/ARC_"$fileToRead"
+                 git commit -m "Published Changes"
+                 git config pull.rebase false
+                 git push --force origin boomi
+              
+             if [ ${modes[$i]} == "deploy" ]
+             then 
+                packageIds=(${{needs.createPackage.outputs.packageId}})
+             else
+                ProcessDetails=$(cat ./boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/ProcessDetails.${uniqueKey}.${envKey}.json)
+                packages=$(echo ${ProcessDetails} | jq '.[] | .processDetails[].packageId')
+                packageIds=($packages)
+             fi
+             echo $packageIds
+             echo "Index 0 value:" ${packageIds[0]} 
+             
+             for ((i=0;i<${#packageIds[@]};i++))
+               do
+                 componentName=${processNames[$i]}
+                 echo $componentName
+                 if [ $envName == "Production" ] && [ ${modes[$i]} == "deploy" ] 
+                 then
+                     envId=${{needs.getEnvironmentInfo.outputs.prodEnvironmentId}}
+                     CODE=`curl  --request POST \
+                               --header "authorization: ${apiAuth}" \
+                               --header 'content-type: application/json' \
+                               --header 'accept: application/json' \
+                               --url "https://api.boomi.com/api/rest/v1/${BoomiAccountId}/DeployedPackage" \
+                               --data '{"environmentId": "'$envId'","packageId": "'${packageIds[$i]}'"}'`
+                             
+                               echo $CODE 
+                               type=$(echo ${CODE} | jq '."@type"')
+                               echo "Type is:"$type
+                               if [[ $type != '"Error"' ]]
+                               then
+                                     outcome='{
+                                              "deployedDatetime": '"$(echo ${CODE} | jq '.deployedDate')"',
+                                              "details": 
+                                               {
+                                                "componentName": "'$componentName'",
+                                                "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                                "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"',
+                                                "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                                "deploymentId": '"$(echo ${CODE} | jq '.deploymentId')"',
+                                                "componentVersion": '"$(echo ${CODE} | jq '.componentVersion')"',
+                                                "environmentId": '"$(echo ${CODE} | jq '.environmentId')"'
+                                               }
+                                             }'
+                                     rollback='{
+                                                 "componentName": "'$componentName'",
+                                                 "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                                 "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                                 "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"'
+                                               }'
+                               echo $rollback, >>  boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Rollback.json            
+                               echo $outcome, >> boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Outcome.json
+                                            git config user.name $username
+                                            git config user.email $email
+                                            git add .
+                                            git commit -m "Published Changes"
+                                            git push --force origin boomi                 
+                               fi
+                    elif [ $envName == "Production" ] && [ ${modes[$i]} == "re-deploy" ]  
+                    then 
+                        envId=${{needs.getEnvironmentInfo.outputs.prodEnvironmentId}}
+                        CODE=`curl  --request POST \
+                               --header "authorization: ${apiAuth}" \
+                               --header 'content-type: application/json' \
+                               --header 'accept: application/json' \
+                               --url "https://api.boomi.com/api/rest/v1/${BoomiAccountId}/DeployedPackage" \
+                               --data '{"environmentId":"'$envId'","packageId": '${packageIds[$i]}'}'`
+                               
+                             
+                               echo $CODE 
+                               type=$(echo ${CODE} | jq '."@type"')
+                               echo "Type is:"$type
+                               if [[ $type != '"Error"' ]]
+                               then
+                                  outcome='{
+                                           "deployedDatetime": '"$(echo ${CODE} | jq '.deployedDate')"',
+                                           "details": 
+                                            {
+                                             "componentName": "'$componentName'",
+                                             "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                             "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"',
+                                             "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                             "deploymentId": '"$(echo ${CODE} | jq '.deploymentId')"',
+                                             "componentVersion": '"$(echo ${CODE} | jq '.componentVersion')"',
+                                             "environmentId": '"$(echo ${CODE} | jq '.environmentId')"'
+                                            }
+                                          }'
+                                          rollback='{
+                                              "componentName": "'$componentName'",
+                                              "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                              "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                              "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"'
+                                            }'
+                                   echo $rollback, >>  boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Rollback.json    
+                                   echo $outcome, >> boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Outcome.json
+                                            git config user.name $username
+                                            git config user.email $email
+                                            git add .
+                                            git commit -m "Published Changes"
+                                            git push --force origin boomi               
+                              fi
+                     elif [[ $envName == "Test" ]]  && [[ ${modes[$i]} == "deploy" ]]
+                     then
+                         envId=${{needs.getEnvironmentInfo.outputs.testEnvironmentId}}
+                         CODE=`curl  --request POST \
+                                   --header "authorization: ${apiAuth}" \
+                                   --header 'content-type: application/json' \
+                                   --header 'accept: application/json' \
+                                   --url "https://api.boomi.com/api/rest/v1/${BoomiAccountId}/DeployedPackage" \
+                                   --data '{"environmentId": "'$envId'","packageId": "'${packageIds[$i]}'"}'`
+                                   
+                                   echo $CODE 
+                                   type=$(echo ${CODE} | jq '."@type"')
+                                   echo "Type is:"$type
+                                   if [[ $type != '"Error"' ]]
+                                   then
+                                      outcome='{
+                                           "deployedDatetime": '"$(echo ${CODE} | jq '.deployedDate')"',
+                                           "details": 
+                                            {
+                                             "componentName": "'$componentName'",
+                                             "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                             "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"',
+                                             "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                             "deploymentId": '"$(echo ${CODE} | jq '.deploymentId')"',
+                                             "componentVersion": '"$(echo ${CODE} | jq '.componentVersion')"',
+                                             "environmentId": '"$(echo ${CODE} | jq '.environmentId')"'
+                                            }
+                                          }'
+                                          rollback='{
+                                              "componentName": "'$componentName'",
+                                              "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                              "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                              "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"'
+                                            }'
+                                    echo $rollback, >>  boomi/Outcome/ProcessesDeploymentOutcomeTest/"$uniqueKey".Test.Rollback.json    
+                                    echo $outcome, >> boomi/Outcome/ProcessesDeploymentOutcomeTest/"$uniqueKey".Test.Outcome.json
+                                            git config user.name $username
+                                            git config user.email $email
+                                            git add .
+                                            git commit -m "Published Changes"
+                                            git push --force origin boomi              
+                                   fi
+                                    
+                     
+                     elif [ $envName == "Test" ] && [ ${modes[$i]} == "re-deploy" ]  
+                      then 
+                          envId=${{needs.getEnvironmentInfo.outputs.testEnvironmentId}}
+                          CODE=`curl  --request POST \
+                                 --header "authorization: ${apiAuth}" \
+                                 --header 'content-type: application/json' \
+                                 --header 'accept: application/json' \
+                                 --url "https://api.boomi.com/api/rest/v1/${BoomiAccountId}/DeployedPackage" \
+                                 --data '{"environmentId":"'$envId'","packageId": '${packageIds[$i]}'}'`
+                                 
+                                 echo $CODE 
+                                 type=$(echo ${CODE} | jq '."@type"')
+                                 echo "Type is:"$type
+                                 if [[ $type != '"Error"' ]]
+                                 then
+                                    outcome='{
+                                           "deployedDatetime": '"$(echo ${CODE} | jq '.deployedDate')"',
+                                           "details": 
+                                            {
+                                             "componentName": "'$componentName'",
+                                             "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                             "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"',
+                                             "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                             "deploymentId": '"$(echo ${CODE} | jq '.deploymentId')"',
+                                             "componentVersion": '"$(echo ${CODE} | jq '.componentVersion')"',
+                                             "environmentId": '"$(echo ${CODE} | jq '.environmentId')"'
+                                            }
+                                          }'
+                                          rollback='{
+                                              "componentName": "'$componentName'",
+                                              "componentId": '"$(echo ${CODE} | jq '.componentId')"',
+                                              "packageId": '"$(echo ${CODE} | jq '.packageId')"',
+                                              "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"'
+                                            }'
+                                    echo $rollback, >>  boomi/Outcome/ProcessesDeploymentOutcomeTest/"$uniqueKey".Test.Rollback.json    
+                                    echo $outcome, >> boomi/Outcome/ProcessesDeploymentOutcomeTest/"$uniqueKey".Test.Outcome.json
+                                            git config user.name $username
+                                            git config user.email $email
+                                            git add .
+                                            git commit -m "Published Changes"
+                                            git push --force origin boomi              
+                                  fi   
+                     else 
+                       CODE=""
+                     fi
+                     echo $outcome
+                     
+                   done 
+                    git rm -r boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead"
+                    git config user.name $username
+                    git config user.email $email
+                    git commit -m "Deleted file"
+                    git config pull.rebase false
+                    git push --force origin boomi 
+                   
+  undeployPackage:
+   runs-on: ubuntu-latest
+   needs: [getProcessInfo,deployPackage]
+   steps:
+      - uses: actions/checkout@v2
+      - name: Package Undeploy
+        id: packageUndeploy
+        run: |
+              deployments=${{needs.getProcessInfo.outputs.deploymentIds}}
+              modes=${{needs.getProcessInfo.outputs.modes}}
+              BoomiAccountId=$BOOMI_ACCOUNTID
+              echo $BoomiAccountId
+              fileToRead=${{needs.getProcessInfo.outputs.fileToRead}}
+              echo "File To Read is:" $fileToRead
+              fileHoldersName=$(git log -n 1 --pretty='format:%an' -- boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/"$fileToRead")
+              echo "File Committer's Name is:" $fileHoldersName
+              if [[ $fileHoldersName == "ashmita0708" ]]
+              then
+                   apiAuth=$ASHMITA_SAWANT_API_AUTH
+              elif [[ $fileHoldersName == "Lalitkarpenter10" ]]
+              then
+                   apiAuth=$LALIT_KARPENTER_API_AUTH
+              elif [[ $fileHoldersName == "kartik-dashora-boomi" ]]
+              then
+                   apiAuth=$KARTIK_DASHORA_API_AUTH
+              elif [[ $fileHoldersName == "Lalit Kumawat" ]]
+              then
+                   apiAuth=$LALIT_KUMAWAT_API_AUTH
+              elif [[ $fileHoldersName == "Sanskriti Sharma" ]]
+              then
+                  apiAuth=$SANSKRITI_SHARMA_API_AUTH
+              else
+                   apiAuth=null
+              fi
+              for ((i=0;i<${#deployments[@]};i++))
+                do
+                  if [[ ${modes[$i]} == "undeploy" ]] && [[ $deployments != "" ]] 
+                  then
+                    CODE=`curl -X DELETE https://api.boomi.com/api/rest/v1/${BoomiAccountId}/DeployedPackage/${deployments[$i]} -H "authorization: ${apiAuth}" -H "content-type: application/json"`
+                                   echo $CODE 
+                                   echo ${deployments[$i]}
+                  fi
+                done
