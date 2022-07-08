@@ -160,7 +160,7 @@ jobs:
               elif [[ $fileHoldersName == "kartik-dashora-boomi" ]]
               then
                    apiAuth=$KARTIK_DASHORA_API_AUTH
-              elif [[ $fileHoldersName == "Lalit Kumawat" ]]
+              elif [[ $fileHoldersName == "luckylalit404" ]]
               then
                    apiAuth=$LALIT_KUMAWAT_API_AUTH
               elif [[ $fileHoldersName == "Sanskriti Sharma" ]]
@@ -234,7 +234,7 @@ jobs:
                    apiAuth=$KARTIK_DASHORA_API_AUTH
                    username=$KARTIK_DASHORA_USERNAME
                    email=$KARTIK_DASHORA_EMAIL
-              elif [[ $fileHoldersName == "Lalit Kumawat" ]]
+              elif [[ $fileHoldersName == "luckylalit404" ]]
               then
                    apiAuth=$LALIT_KUMAWAT_API_AUTH
                    username=$LALIT_KUMAWAT_USERNAME
@@ -261,7 +261,7 @@ jobs:
                  git add boomi/Archives/ProcessArchive/ARC_"$fileToRead"
                  git commit -m "Published Changes"
                  git config pull.rebase false
-                 git push --force origin boomi
+                 git push --force origin main
               
              if [ ${modes[$i]} == "deploy" ]
              then 
@@ -318,7 +318,7 @@ jobs:
                                             git config user.email $email
                                             git add .
                                             git commit -m "Published Changes"
-                                            git push --force origin boomi                 
+                                            git push --force origin main                 
                                fi
                     elif [ $envName == "Production" ] && [ ${modes[$i]} == "re-deploy" ]  
                     then 
@@ -361,7 +361,7 @@ jobs:
                                             git config user.email $email
                                             git add .
                                             git commit -m "Published Changes"
-                                            git push --force origin boomi               
+                                            git push --force origin main               
                               fi
                      elif [[ $envName == "Test" ]]  && [[ ${modes[$i]} == "deploy" ]]
                      then
@@ -403,7 +403,7 @@ jobs:
                                             git config user.email $email
                                             git add .
                                             git commit -m "Published Changes"
-                                            git push --force origin boomi              
+                                            git push --force origin main              
                                    fi
                                     
                      
@@ -447,7 +447,7 @@ jobs:
                                             git config user.email $email
                                             git add .
                                             git commit -m "Published Changes"
-                                            git push --force origin boomi              
+                                            git push --force origin main              
                                   fi   
                      else 
                        CODE=""
@@ -460,7 +460,7 @@ jobs:
                     git config user.email $email
                     git commit -m "Deleted file"
                     git config pull.rebase false
-                    git push --force origin boomi 
+                    git push --force origin main 
                    
   undeployPackage:
    runs-on: ubuntu-latest
