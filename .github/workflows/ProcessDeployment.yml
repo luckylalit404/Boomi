@@ -355,8 +355,8 @@ jobs:
                                               "packageId": '"$(echo ${CODE} | jq '.packageId')"',
                                               "packageVersion": '"$(echo ${CODE} | jq '.packageVersion')"'
                                             }'
-                                   echo $rollback, >>  boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Rollback.json    
-                                   echo $outcome, >> boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Outcome.json
+                                   echo $rollback, >>  Boomi/boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Rollback.json    
+                                   echo $outcome, >> Boomi/boomi/Outcome/ProcessesDeploymentOutcomeProd/"$uniqueKey".Prod.Outcome.json
                                             git config user.name $username
                                             git config user.email $email
                                             git add .
