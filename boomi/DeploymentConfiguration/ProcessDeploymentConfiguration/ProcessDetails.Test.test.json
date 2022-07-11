@@ -1,0 +1,11 @@
+[{ "environmentName": "Test",
+  "processDetails": 
+  [{ "processName": "Check base64 encode",
+    "componentID": "f2bff114-7f2a-4c84-b5af-aeb4a70d13f9", 
+    "packageVersion": "v1.4",
+    "packageId": "",
+    "mode": "deploy",
+    "deploymentID": ""
+   }]
+ }
+]
