@@ -1,0 +1,12 @@
+[{
+
+     "environmentName": "Production",
+     "processDetails": [{
+                    "processName": "Check base64 encode",
+                    "componentID": "f2bff114-7f2a-4c84-b5af-aeb4a70d13f9",
+                    "packageVersion": "",
+                    "packageId": "6c325afd-e0f0-4cb7-84c9-22617845d98a",
+                    "mode": "re-deploy",
+                    "deploymentID": ""
+                  }]
+}]
