@@ -1,9 +1,9 @@
 name: Boomi Processes Deployment Pipeline
 
 on:
-   push:
-    paths:
-      - 'boomi/DeploymentConfiguration/ProcessDeploymentConfiguration/*.json' 
+ pull_request:
+     branches: [boomi-master] 
+     types: [closed]
 env: 
            BOOMI_ACCOUNTID: ${{secrets.BOOMI_ACCOUNTID}}
            ASHMITA_SAWANT_API_AUTH: ${{secrets.ASHMITA_SAWANT_API_AUTH}}
